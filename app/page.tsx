@@ -40,16 +40,14 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate prompt');
+        throw new Error(`Failed to generate prompt: ${response.status}`);
       }
 
       const data = await response.json();
       setGeneratedPrompt(data.prompt || 'Failed to generate prompt');
       setGenerationNote(data.note || '');
     } catch (error) {
-      console.error('Error generating prompt:', error);
-      setGeneratedPrompt('Error: Failed to generate prompt. Please try again.');
-      setGenerationNote('');
+      setGeneratedPrompt(`Error: ${error instanceof Error ? error.message : 'Failed to generate prompt'}`);
     } finally {
       setIsGenerating(false);
     }
@@ -62,7 +60,7 @@ export default function Home() {
       await navigator.clipboard.writeText(generatedPrompt);
       alert('Prompt copied to clipboard!');
     } catch (error) {
-      console.error('Failed to copy:', error);
+      // Silent fail
     }
   };
 
