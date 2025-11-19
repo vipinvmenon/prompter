@@ -9,95 +9,71 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: "Idea is required" }, { status: 400 });
 		}
 
-		// Use HuggingFace API
+		// Try different AI providers in order
+		const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 		const HF_API_TOKEN = process.env.HUGGINGFACE_API_TOKEN || "";
 
-		if (!HF_API_TOKEN) {
-			return NextResponse.json({
-				prompt: generateIntelligentFallback(idea, options),
-				note: "Please add HUGGINGFACE_API_TOKEN to your .env.local file. Get your token at https://huggingface.co/settings/tokens",
-			});
-		}
+		// Build the system prompt based on options
+		const systemPrompt = buildSystemPrompt(options);
+		const userPrompt = buildUserPrompt(idea, options);
 
-		try {
-			// Use standard HuggingFace Inference API
-			const model = "gpt2";
-			const apiUrl = `https://api-inference.huggingface.co/models/${model}`;
-
-			// Simple prompt format
-			const textPrompt = `Create a professional AI prompt: ${idea}\n\nPrompt:`;
-
-			const requestBody = {
-				inputs: textPrompt,
-				parameters: {
-					max_new_tokens: 400,
-					temperature: 0.8,
-					return_full_text: false,
-				},
-			};
-
-			const hfResponse = await fetch(apiUrl, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${HF_API_TOKEN}`,
-				},
-				body: JSON.stringify(requestBody),
-			});
-
-			if (!hfResponse.ok) {
-				return NextResponse.json({
-					prompt: generateIntelligentFallback(idea, options),
-				});
-			}
-
-			const hfData = await hfResponse.json();
-
-			let generatedText = "";
-
-			// Standard format: { generated_text: "..." } or [{ generated_text: "..." }]
-			if (Array.isArray(hfData) && hfData[0]?.generated_text) {
-				generatedText = hfData[0].generated_text;
-			} else if (hfData.generated_text) {
-				generatedText = hfData.generated_text;
-			}
-
-			if (!generatedText) {
-				return NextResponse.json({
-					prompt: generateIntelligentFallback(idea, options),
-				});
-			}
-
-			// Clean up the generated text
-			generatedText = generatedText.trim();
-
-			// Remove any special tokens
-			generatedText = generatedText.replace(/<\|endoftext\|>/g, "");
-			generatedText = generatedText.replace(/<pad>/g, "");
-			generatedText = generatedText.trim();
-
-			// Remove prompt echo if present
-			if (generatedText.includes("Prompt:")) {
-				const parts = generatedText.split("Prompt:");
-				if (parts[1]) {
-					generatedText = parts[1].trim();
+		// Try Groq first (best free option)
+		if (GROQ_API_KEY) {
+			try {
+				const groqResult = await tryGroq(
+					GROQ_API_KEY,
+					systemPrompt,
+					userPrompt
+				);
+				if (groqResult) {
+					return NextResponse.json({
+						prompt: groqResult.prompt,
+						model: groqResult.model,
+						provider: "Groq",
+					});
 				}
+			} catch (error) {
+				// Silently try next provider
 			}
+		}
 
-			if (generatedText.length < 50) {
-				return NextResponse.json({
-					prompt: generateIntelligentFallback(idea, options),
-				});
+		// Try HuggingFace with better models
+		if (HF_API_TOKEN) {
+			try {
+				const hfResult = await tryHuggingFace(
+					HF_API_TOKEN,
+					systemPrompt,
+					userPrompt
+				);
+				if (hfResult) {
+					return NextResponse.json({
+						prompt: hfResult.prompt,
+						model: hfResult.model,
+						provider: "HuggingFace",
+					});
+				}
+			} catch (error) {
+				// Silently try fallback
 			}
+		}
 
-			return NextResponse.json({
-				prompt: generatedText,
-			});
-		} catch (error) {
+		// If no API keys provided, return helpful message
+		if (!GROQ_API_KEY && !HF_API_TOKEN) {
 			return NextResponse.json({
 				prompt: generateIntelligentFallback(idea, options),
+				model: "Template Fallback",
+				provider: "Local",
+				note: "⚠️ No API keys configured. Get a free API key:\n• Groq (fastest): https://console.groq.com\n• HuggingFace: https://huggingface.co/settings/tokens\n\nAdd GROQ_API_KEY or HUGGINGFACE_API_TOKEN to your .env.local file.",
 			});
 		}
+
+		// Fallback to template-based generation
+		return NextResponse.json({
+			prompt: generateIntelligentFallback(idea, options),
+			model: "Template Fallback",
+			provider: "Local",
+			note: "Using fallback template. For better results, check your API keys.",
+		});
 	} catch (error) {
 		console.error("Error generating prompt:", error);
 		return NextResponse.json(
@@ -110,82 +86,226 @@ export async function POST(request: NextRequest) {
 	}
 }
 
-// Enhanced fallback that creates professional, well-structured prompts
-function generateIntelligentFallback(idea: string, options: any): string {
-	let prompt = "";
+// Try Groq API with multiple models (try newer models first)
+async function tryGroq(
+	apiKey: string,
+	systemPrompt: string,
+	userPrompt: string
+): Promise<{ prompt: string; model: string } | null> {
+	// List of available Groq models (as of Nov 2024+)
+	const models = [
+		"llama-3.3-70b-versatile", // Latest Llama 3.3 70B (best quality)
+		"llama-3.1-8b-instant", // Fast Llama 3.1 8B
+		"mixtral-8x7b-32768", // Mixtral (good fallback)
+		"gemma2-9b-it", // Gemma 2 (another fallback)
+	];
 
-	// Analyze the idea and create a more intelligent prompt
-	const ideaLower = idea.toLowerCase();
-	const isCodeRelated =
-		ideaLower.includes("code") ||
-		ideaLower.includes("programming") ||
-		ideaLower.includes("react") ||
-		ideaLower.includes("vue") ||
-		ideaLower.includes("javascript") ||
-		ideaLower.includes("python") ||
-		ideaLower.includes("app") ||
-		ideaLower.includes("todo");
-	const isWritingRelated =
-		ideaLower.includes("write") ||
-		ideaLower.includes("essay") ||
-		ideaLower.includes("article") ||
-		ideaLower.includes("story") ||
-		ideaLower.includes("content") ||
-		ideaLower.includes("blog");
-	const isAnalysisRelated =
-		ideaLower.includes("analyze") ||
-		ideaLower.includes("explain") ||
-		ideaLower.includes("review") ||
-		ideaLower.includes("understand") ||
-		ideaLower.includes("breakdown");
-	const isPlanningRelated =
-		ideaLower.includes("plan") ||
-		ideaLower.includes("schedule") ||
-		ideaLower.includes("organize") ||
-		ideaLower.includes("manage");
-	const isCreativeRelated =
-		ideaLower.includes("creative") ||
-		ideaLower.includes("design") ||
-		ideaLower.includes("art") ||
-		ideaLower.includes("generate");
+	for (const model of models) {
+		try {
+			const response = await fetch(
+				"https://api.groq.com/openai/v1/chat/completions",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${apiKey}`,
+					},
+					body: JSON.stringify({
+						model: model,
+						messages: [
+							{ role: "system", content: systemPrompt },
+							{ role: "user", content: userPrompt },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+					}),
+				}
+			);
 
-	if (options.includeRole) {
-		if (isCodeRelated) {
-			prompt += `You are an expert software engineer and technical consultant with deep knowledge of best practices, design patterns, modern development frameworks, and software architecture. You excel at writing clean, maintainable code and providing actionable technical guidance.\n\n`;
-		} else if (isWritingRelated) {
-			prompt += `You are a professional writer and editor with expertise in crafting clear, engaging, and well-structured content across various formats and audiences. You have a keen eye for detail and a mastery of language and style.\n\n`;
-		} else if (isAnalysisRelated) {
-			prompt += `You are an expert analyst with strong critical thinking skills and the ability to break down complex topics into clear, understandable insights. You excel at identifying patterns, drawing connections, and presenting information in a logical and accessible manner.\n\n`;
-		} else if (isPlanningRelated) {
-			prompt += `You are a strategic planner and organizer with expertise in project management, systematic thinking, and efficient workflow design. You excel at breaking down goals into actionable steps and creating clear, achievable plans.\n\n`;
-		} else if (isCreativeRelated) {
-			prompt += `You are a creative professional with expertise in design thinking, innovation, and artistic expression. You excel at generating original ideas and bringing creative visions to life.\n\n`;
-		} else {
-			prompt += `You are an expert AI assistant designed to help users achieve their goals effectively and safely. You combine knowledge, empathy, and practicality to provide valuable assistance across a wide range of tasks and challenges.\n\n`;
+			if (!response.ok) continue;
+
+			const data = await response.json();
+			const generatedPrompt = data.choices?.[0]?.message?.content?.trim();
+
+			if (generatedPrompt && generatedPrompt.length > 50) {
+				return { prompt: generatedPrompt, model: model };
+			}
+		} catch (error) {
+			continue;
 		}
 	}
 
-	prompt += `Your Task:\n${idea}\n\n`;
+	return null;
+}
+
+// Try HuggingFace with better models (Mixtral or Mistral)
+async function tryHuggingFace(
+	apiKey: string,
+	systemPrompt: string,
+	userPrompt: string
+): Promise<{ prompt: string; model: string } | null> {
+	// Try Mixtral-8x7B-Instruct first (better than GPT-2)
+	const models = [
+		"mistralai/Mixtral-8x7B-Instruct-v0.1",
+		"mistralai/Mistral-7B-Instruct-v0.2",
+		"meta-llama/Meta-Llama-3-8B-Instruct",
+	];
+
+	for (const model of models) {
+		try {
+			const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+
+			const response = await fetch(
+				`https://api-inference.huggingface.co/models/${model}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${apiKey}`,
+					},
+					body: JSON.stringify({
+						inputs: fullPrompt,
+						parameters: {
+							max_new_tokens: 800,
+							temperature: 0.7,
+							return_full_text: false,
+							do_sample: true,
+						},
+					}),
+				}
+			);
+
+			if (!response.ok) continue;
+
+			const data = await response.json();
+			let generatedText = "";
+
+			if (Array.isArray(data) && data[0]?.generated_text) {
+				generatedText = data[0].generated_text;
+			} else if (data.generated_text) {
+				generatedText = data.generated_text;
+			}
+
+			// Clean up the text
+			generatedText = generatedText
+				.trim()
+				.replace(/<\|endoftext\|>/g, "")
+				.replace(/<\/s>/g, "")
+				.replace(/<s>/g, "")
+				.replace(/\[INST\].*?\[\/INST\]/g, "")
+				.trim();
+
+			if (generatedText.length > 50) {
+				return { prompt: generatedText, model: model };
+			}
+		} catch (error) {
+			continue;
+		}
+	}
+
+	return null;
+}
+
+// Build system prompt for AI
+function buildSystemPrompt(options: any): string {
+	return `You are an expert AI prompt engineer. Your task is to transform a user's simple idea into a comprehensive, well-structured AI prompt that will produce excellent results.
+
+Your generated prompts should:
+- Be clear, specific, and actionable
+- Include relevant context and constraints
+- Follow best practices for prompt engineering
+- Be ready to use immediately with any AI assistant
+
+${options.includeRole ? "- Include an appropriate role/persona for the AI" : ""}
+${options.includeTone ? "- Specify the tone and style of communication" : ""}
+${options.includeSafetyRules ? "- Include safety and ethical guidelines" : ""}
+${
+	options.includeExamples ? "- Suggest including examples when appropriate" : ""
+}
+
+Generate ONLY the final prompt that the user can copy and use. Do NOT include meta-commentary, explanations, or introductions like "Here's your prompt:". Just output the prompt itself.`;
+}
+
+// Build user prompt
+function buildUserPrompt(idea: string, options: any): string {
+	return `Transform this idea into a professional, comprehensive AI prompt:\n\n"${idea}"\n\nGenerate a complete, ready-to-use prompt that incorporates best practices and will produce high-quality results.`;
+}
+
+// Template-based fallback for when no AI API is available
+function generateIntelligentFallback(idea: string, options: any): string {
+	const parts: string[] = [];
+	const ideaLower = idea.toLowerCase();
+
+	// Determine task type
+	const taskTypes = {
+		code: [
+			"code",
+			"programming",
+			"react",
+			"vue",
+			"javascript",
+			"python",
+			"app",
+		],
+		writing: ["write", "essay", "article", "story", "content", "blog"],
+		analysis: ["analyze", "explain", "review", "understand", "breakdown"],
+		planning: ["plan", "schedule", "organize", "manage"],
+		creative: ["creative", "design", "art", "generate"],
+	};
+
+	const detectType = () => {
+		for (const [type, keywords] of Object.entries(taskTypes)) {
+			if (keywords.some((kw) => ideaLower.includes(kw))) return type;
+		}
+		return "general";
+	};
+
+	const taskType = detectType();
+
+	// Role definitions
+	const roles: Record<string, string> = {
+		code: "You are an expert software engineer and technical consultant with deep knowledge of best practices, design patterns, and modern development frameworks.",
+		writing:
+			"You are a professional writer and editor with expertise in crafting clear, engaging, and well-structured content.",
+		analysis:
+			"You are an expert analyst with strong critical thinking skills and the ability to break down complex topics into clear insights.",
+		planning:
+			"You are a strategic planner and organizer with expertise in project management and systematic thinking.",
+		creative:
+			"You are a creative professional with expertise in design thinking, innovation, and artistic expression.",
+		general:
+			"You are an expert AI assistant designed to help users achieve their goals effectively and safely.",
+	};
+
+	if (options.includeRole) {
+		parts.push(roles[taskType]);
+	}
+
+	parts.push(`Your Task:\n${idea}`);
 
 	if (options.includeTone) {
-		if (isCodeRelated) {
-			prompt += `Tone and Style: Use a technical but approachable tone. Be precise with terminology, provide clear explanations, and use code examples when helpful. Explain concepts in a way that balances depth with accessibility.\n\n`;
-		} else if (isWritingRelated) {
-			prompt += `Tone and Style: Write in a clear, engaging, and professional manner. Adapt your writing style to match the intended audience and purpose. Use appropriate vocabulary and maintain consistency throughout.\n\n`;
-		} else {
-			prompt += `Tone: Please respond in a professional, clear, and helpful manner. Adapt your communication style to be appropriate for the context and user needs.\n\n`;
-		}
+		const tone =
+			taskType === "code"
+				? "Use a technical but approachable tone with clear explanations and examples."
+				: "Respond in a professional, clear, and helpful manner appropriate for the context.";
+		parts.push(`Tone: ${tone}`);
 	}
 
 	if (options.includeSafetyRules) {
-		prompt += `Safety Guidelines:\n- Ensure all responses are accurate, ethical, and safe\n- Do not provide harmful, offensive, or inappropriate content\n- Respect user privacy and data security\n- Provide disclaimers when necessary for safety or legal reasons\n- Verify information when dealing with critical topics\n\n`;
+		parts.push(
+			"Safety: Ensure all responses are accurate, ethical, and safe. Do not provide harmful content."
+		);
 	}
 
 	if (options.includeExamples) {
-		prompt += `Guidelines for Examples:\n- Include concrete, relevant examples that illustrate key concepts or approaches\n- Use examples that are practical and easy to understand\n- Provide multiple examples when helpful to show different scenarios or use cases\n- Ensure examples are directly related to the task at hand\n\n`;
+		parts.push(
+			"Include concrete, practical examples that illustrate key concepts and are directly related to the task."
+		);
 	}
 
-	prompt += `Additional Instructions:\n- Provide clear, actionable responses that directly address the task\n- Break down complex information into digestible parts when necessary\n- Be thorough and comprehensive while remaining concise\n- Focus on delivering practical, useful outcomes\n- Ensure your response is well-organized and easy to follow\n\nPlease proceed with the task as described above, ensuring high quality and thoroughness in your response.`;
+	parts.push(
+		"Provide clear, actionable responses. Break down complex information into digestible parts. Be thorough yet concise."
+	);
 
-	return prompt;
+	return parts.join("\n\n");
 }

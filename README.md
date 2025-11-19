@@ -87,17 +87,12 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 The app includes an API route at `/api/generate` that:
 - Accepts user ideas and options
-- Calls Hugging Face models to generate improved prompts
-- Includes fallback logic for reliability
+- **Uses real AI models** to generate intelligent, context-aware prompts:
+  - **Primary**: Groq API (tries Llama 3.3 70B → Llama 3.1 8B → Mixtral → Gemma2)
+  - **Secondary**: HuggingFace with Mixtral-8x7B, Mistral-7B, or Llama-3-8B
+  - **Fallback**: Template-based generation if no API keys configured
+- Automatically tries multiple models and providers for maximum reliability
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new).
-
-1. Push your code to GitHub
-2. Import your repository on Vercel
-3. Add your `GROQ_API_KEY` or `HUGGINGFACE_API_TOKEN` as an environment variable in Vercel settings
-4. Deploy!
 
 ## License
 
