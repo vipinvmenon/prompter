@@ -5,15 +5,53 @@
   --foreground: #ffffff;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Minimal scrollbar - just the bar */
+textarea::-webkit-scrollbar,
+pre::-webkit-scrollbar {
+  width: 6px;
+}
+
+textarea::-webkit-scrollbar-track,
+pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+textarea::-webkit-scrollbar-thumb,
+pre::-webkit-scrollbar-thumb {
+  background: #4B5563;
+  border-radius: 3px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover,
+pre::-webkit-scrollbar-thumb:hover {
+  background: #6B7280;
+}
+
+/* Remove all scrollbar arrows/buttons */
+textarea::-webkit-scrollbar-button,
+pre::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+textarea::-webkit-scrollbar-button:start:decrement,
+textarea::-webkit-scrollbar-button:end:increment,
+pre::-webkit-scrollbar-button:start:decrement,
+pre::-webkit-scrollbar-button:end:increment {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+textarea::-webkit-scrollbar-corner,
+pre::-webkit-scrollbar-corner {
+  display: none;
+  background: transparent;
 }
