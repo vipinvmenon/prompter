@@ -61,7 +61,7 @@ export default function ModeDetailScreen({
           <button
             onClick={onGenerate}
             disabled={isGenerating || !idea.trim()}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] px-8 py-3 text-lg font-semibold text-white transition-all hover:from-[var(--primary-hover)] hover:to-[var(--secondary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] px-8 py-3 text-lg font-semibold text-white transition-all hover:from-[var(--primary-hover)] hover:to-[var(--secondary-hover)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isGenerating ? (
               <>

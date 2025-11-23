@@ -19,7 +19,7 @@ export default function Header({
         {showBackButton && (
           <button
             onClick={onBackClick}
-            className="mr-2 rounded-lg p-2 transition-colors hover:bg-white/10"
+            className="mr-2 rounded-lg p-2 transition-colors hover:bg-white/10 cursor-pointer"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -34,7 +34,7 @@ export default function Header({
       {showHistoryButton && (
         <button
           onClick={onHistoryClick}
-          className="rounded-lg border border-white/20 p-2 transition-colors hover:bg-white/10"
+          className="rounded-lg border border-white/20 p-2 transition-colors hover:bg-white/10 cursor-pointer"
           title="History"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

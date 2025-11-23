@@ -21,7 +21,7 @@ export default function AdvancedOptions({ options, onOptionsChange }: AdvancedOp
             type="checkbox"
             checked={options.includeRole}
             onChange={(e) => handleChange('includeRole', e.target.checked)}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)]"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
           />
           <span className="text-sm">Role</span>
         </label>
@@ -30,7 +30,7 @@ export default function AdvancedOptions({ options, onOptionsChange }: AdvancedOp
             type="checkbox"
             checked={options.includeTone}
             onChange={(e) => handleChange('includeTone', e.target.checked)}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)]"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
           />
           <span className="text-sm">Tone</span>
         </label>
@@ -39,7 +39,7 @@ export default function AdvancedOptions({ options, onOptionsChange }: AdvancedOp
             type="checkbox"
             checked={options.includeSafetyRules}
             onChange={(e) => handleChange('includeSafetyRules', e.target.checked)}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)]"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
           />
           <span className="text-sm">Safety Rules</span>
         </label>
@@ -48,7 +48,7 @@ export default function AdvancedOptions({ options, onOptionsChange }: AdvancedOp
             type="checkbox"
             checked={options.includeExamples}
             onChange={(e) => handleChange('includeExamples', e.target.checked)}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)]"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
           />
           <span className="text-sm">Include Examples</span>
         </label>

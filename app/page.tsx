@@ -129,69 +129,71 @@ export default function Home() {
 
   // Render appropriate screen with Framer Motion transitions
   return (
-    <AnimatePresence custom={direction}>
-      {currentScreen === 'landing' && (
-        <motion.div
-          key="landing"
-          custom={direction}
-          variants={slideVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={transition}
-        >
-          <LandingScreen onModeSelect={handleModeSelect} />
-        </motion.div>
-      )}
-      {currentScreen === 'detail' && (
-        <motion.div
-          key="detail"
-          custom={direction}
-          variants={slideVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={transition}
-        >
-          <ModeDetailScreen
-            selectedMode={selectedMode}
-            idea={idea}
-            onIdeaChange={setIdea}
-            options={options}
-            onOptionsChange={setOptions}
-            isGenerating={isGenerating}
-            onGenerate={handleGenerate}
-            onBack={() => navigateToScreen('landing', 'back')}
-          />
-        </motion.div>
-      )}
-      {currentScreen === 'result' && (
-        <motion.div
-          key="result"
-          custom={direction}
-          variants={slideVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={transition}
-        >
-          <ResultScreen
-            generatedPrompt={generatedPrompt}
-            modelUsed={modelUsed}
-            providerUsed={providerUsed}
-            copied={copied}
-            isGenerating={isGenerating}
-            historyOpen={historyOpen}
-            history={history}
-            onCopy={handleCopy}
-            onRegenerate={handleGenerate}
-            onBack={() => navigateToScreen('detail', 'back')}
-            onHistoryToggle={() => setHistoryOpen(!historyOpen)}
-            onHistoryClose={() => setHistoryOpen(false)}
-            onHistorySelect={handleHistorySelect}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="overflow-x-hidden">
+      <AnimatePresence custom={direction}>
+        {currentScreen === 'landing' && (
+          <motion.div
+            key="landing"
+            custom={direction}
+            variants={slideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transition}
+          >
+            <LandingScreen onModeSelect={handleModeSelect} />
+          </motion.div>
+        )}
+        {currentScreen === 'detail' && (
+          <motion.div
+            key="detail"
+            custom={direction}
+            variants={slideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transition}
+          >
+            <ModeDetailScreen
+              selectedMode={selectedMode}
+              idea={idea}
+              onIdeaChange={setIdea}
+              options={options}
+              onOptionsChange={setOptions}
+              isGenerating={isGenerating}
+              onGenerate={handleGenerate}
+              onBack={() => navigateToScreen('landing', 'back')}
+            />
+          </motion.div>
+        )}
+        {currentScreen === 'result' && (
+          <motion.div
+            key="result"
+            custom={direction}
+            variants={slideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transition}
+          >
+            <ResultScreen
+              generatedPrompt={generatedPrompt}
+              modelUsed={modelUsed}
+              providerUsed={providerUsed}
+              copied={copied}
+              isGenerating={isGenerating}
+              historyOpen={historyOpen}
+              history={history}
+              onCopy={handleCopy}
+              onRegenerate={handleGenerate}
+              onBack={() => navigateToScreen('detail', 'back')}
+              onHistoryToggle={() => setHistoryOpen(!historyOpen)}
+              onHistoryClose={() => setHistoryOpen(false)}
+              onHistorySelect={handleHistorySelect}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

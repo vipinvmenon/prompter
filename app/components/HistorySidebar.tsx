@@ -19,7 +19,7 @@ export default function HistorySidebar({ isOpen, history, onClose, onSelectItem 
         <h3 className="text-lg font-semibold">History</h3>
         <button
           onClick={onClose}
-          className="rounded-lg p-1 transition-colors hover:bg-white/10"
+          className="rounded-lg p-1 transition-colors hover:bg-white/10 cursor-pointer"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -36,7 +36,7 @@ export default function HistorySidebar({ isOpen, history, onClose, onSelectItem 
               <button
                 key={item.id}
                 onClick={() => onSelectItem(item)}
-                className="w-full rounded-lg border border-white/10 bg-[var(--background)] p-3 text-left transition-colors hover:bg-white/5"
+                className="w-full rounded-lg border border-white/10 bg-[var(--background)] p-3 text-left transition-colors hover:bg-white/5 cursor-pointer"
               >
                 <div className="mb-1 flex items-center gap-2">
                   <span className="text-lg">{mode?.icon}</span>

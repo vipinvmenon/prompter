@@ -13,7 +13,7 @@ export default function ActionButtons({
     <div className="mb-6 flex flex-wrap gap-2">
       <button
         onClick={onCopy}
-        className="flex items-center gap-2 rounded-lg border border-white/20 bg-[var(--surface)] px-4 py-2 text-sm transition-colors hover:bg-white/10"
+        className="flex items-center gap-2 rounded-lg border border-white/20 bg-[var(--surface)] px-4 py-2 text-sm transition-colors hover:bg-white/10 cursor-pointer"
       >
         {copied ? (
           <>
