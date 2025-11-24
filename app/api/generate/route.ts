@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
-		const { idea, options } = body;
+		const { idea, options, mode } = body;
 
 		if (!idea || !idea.trim()) {
 			return NextResponse.json({ error: "Idea is required" }, { status: 400 });
@@ -13,9 +13,9 @@ export async function POST(request: NextRequest) {
 		const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 		const HF_API_TOKEN = process.env.HUGGINGFACE_API_TOKEN || "";
 
-		// Build the system prompt based on options
-		const systemPrompt = buildSystemPrompt(options);
-		const userPrompt = buildUserPrompt(idea, options);
+		// Build the system prompt based on options and mode
+		const systemPrompt = buildSystemPrompt(options, mode);
+		const userPrompt = buildUserPrompt(idea, mode);
 
 		// Try Groq first (best free option)
 		if (GROQ_API_KEY) {
@@ -57,22 +57,16 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// If no API keys provided, return helpful message
-		if (!GROQ_API_KEY && !HF_API_TOKEN) {
-			return NextResponse.json({
-				prompt: generateIntelligentFallback(idea, options),
-				model: "Template Fallback",
-				provider: "Local",
-				note: "⚠️ No API keys configured. Get a free API key:\n• Groq (fastest): https://console.groq.com\n• HuggingFace: https://huggingface.co/settings/tokens\n\nAdd GROQ_API_KEY or HUGGINGFACE_API_TOKEN to your .env.local file.",
-			});
-		}
-
 		// Fallback to template-based generation
+		const fallbackPrompt = generateIntelligentFallback(idea, options, mode);
 		return NextResponse.json({
-			prompt: generateIntelligentFallback(idea, options),
+			prompt: fallbackPrompt,
 			model: "Template Fallback",
 			provider: "Local",
-			note: "Using fallback template. For better results, check your API keys.",
+			note:
+				!GROQ_API_KEY && !HF_API_TOKEN
+					? "⚠️ No API keys configured. Get a free API key:\n• Groq (fastest): https://console.groq.com\n• HuggingFace: https://huggingface.co/settings/tokens\n\nAdd GROQ_API_KEY or HUGGINGFACE_API_TOKEN to your .env.local file."
+					: "Using fallback template. For better results, check your API keys.",
 		});
 	} catch (error) {
 		console.error("Error generating prompt:", error);
@@ -144,7 +138,6 @@ async function tryHuggingFace(
 	systemPrompt: string,
 	userPrompt: string
 ): Promise<{ prompt: string; model: string } | null> {
-	// Try Mixtral-8x7B-Instruct first (better than GPT-2)
 	const models = [
 		"mistralai/Mixtral-8x7B-Instruct-v0.1",
 		"mistralai/Mistral-7B-Instruct-v0.2",
@@ -153,8 +146,6 @@ async function tryHuggingFace(
 
 	for (const model of models) {
 		try {
-			const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-
 			const response = await fetch(
 				`https://api-inference.huggingface.co/models/${model}`,
 				{
@@ -164,7 +155,7 @@ async function tryHuggingFace(
 						Authorization: `Bearer ${apiKey}`,
 					},
 					body: JSON.stringify({
-						inputs: fullPrompt,
+						inputs: `${systemPrompt}\n\n${userPrompt}`,
 						parameters: {
 							max_new_tokens: 800,
 							temperature: 0.7,
@@ -178,27 +169,19 @@ async function tryHuggingFace(
 			if (!response.ok) continue;
 
 			const data = await response.json();
-			let generatedText = "";
-
-			if (Array.isArray(data) && data[0]?.generated_text) {
-				generatedText = data[0].generated_text;
-			} else if (data.generated_text) {
-				generatedText = data.generated_text;
-			}
-
-			// Clean up the text
-			generatedText = generatedText
+			const generatedText = (
+				Array.isArray(data)
+					? data[0]?.generated_text
+					: data.generated_text || ""
+			)
 				.trim()
-				.replace(/<\|endoftext\|>/g, "")
-				.replace(/<\/s>/g, "")
-				.replace(/<s>/g, "")
-				.replace(/\[INST\].*?\[\/INST\]/g, "")
+				.replace(/<\|endoftext\|>|<\/s>|<s>|\[INST\].*?\[\/INST\]/g, "")
 				.trim();
 
 			if (generatedText.length > 50) {
-				return { prompt: generatedText, model: model };
+				return { prompt: generatedText, model };
 			}
-		} catch (error) {
+		} catch {
 			continue;
 		}
 	}
@@ -207,60 +190,89 @@ async function tryHuggingFace(
 }
 
 // Build system prompt for AI
-function buildSystemPrompt(options: any): string {
+function buildSystemPrompt(options: any, mode: string | null): string {
+	// Mode-specific instructions
+	const modeInstructions: Record<string, string> = {
+		writing:
+			"Focus on creating prompts for content creation, essays, articles, stories, and written materials. Emphasize clarity, structure, and engaging language.",
+		coding:
+			"Focus on creating prompts for code generation, debugging, technical explanations, and programming tasks. Emphasize precision, best practices, and code quality.",
+		creative:
+			"Focus on creating prompts for creative tasks, brainstorming, ideation, storytelling, and artistic endeavors. Emphasize imagination, originality, and creative expression.",
+		product:
+			"Focus on creating prompts for product descriptions, feature documentation, marketing copy, and product-related content. Emphasize clarity, benefits, and user value.",
+		research:
+			"Focus on creating prompts for analysis, research, deep dives, and investigative tasks. Emphasize thoroughness, accuracy, and critical thinking.",
+		general:
+			"Create versatile prompts suitable for any task type. Balance comprehensiveness with flexibility.",
+	};
+
+	const requirements = [
+		"- Be clear, specific, and actionable",
+		"- Include relevant context and constraints",
+		"- Follow best practices for prompt engineering",
+		"- Be ready to use immediately with any AI assistant",
+		options.includeRole && "- Include an appropriate role/persona for the AI",
+		options.includeTone && "- Specify the tone and style of communication",
+		options.includeSafetyRules && "- Include safety and ethical guidelines",
+		options.includeExamples && "- Suggest including examples when appropriate",
+	].filter(Boolean);
+
+	const modeGuidance =
+		mode && modeInstructions[mode]
+			? `\n\nMode-specific guidance:\n${modeInstructions[mode]}`
+			: "";
+
 	return `You are an expert AI prompt engineer. Your task is to transform a user's simple idea into a comprehensive, well-structured AI prompt that will produce excellent results.
 
 Your generated prompts should:
-- Be clear, specific, and actionable
-- Include relevant context and constraints
-- Follow best practices for prompt engineering
-- Be ready to use immediately with any AI assistant
-
-${options.includeRole ? "- Include an appropriate role/persona for the AI" : ""}
-${options.includeTone ? "- Specify the tone and style of communication" : ""}
-${options.includeSafetyRules ? "- Include safety and ethical guidelines" : ""}
-${
-	options.includeExamples ? "- Suggest including examples when appropriate" : ""
-}
+${requirements.join("\n")}${modeGuidance}
 
 Generate ONLY the final prompt that the user can copy and use. Do NOT include meta-commentary, explanations, or introductions like "Here's your prompt:". Just output the prompt itself.`;
 }
 
 // Build user prompt
-function buildUserPrompt(idea: string, options: any): string {
-	return `Transform this idea into a professional, comprehensive AI prompt:\n\n"${idea}"\n\nGenerate a complete, ready-to-use prompt that incorporates best practices and will produce high-quality results.`;
+function buildUserPrompt(idea: string, mode: string | null): string {
+	const modeContext = mode
+		? `\n\nContext: This prompt is for ${mode} mode. Tailor the generated prompt accordingly.`
+		: "";
+	return `Transform this idea into a professional, comprehensive AI prompt:\n\n"${idea}"${modeContext}\n\nGenerate a complete, ready-to-use prompt that incorporates best practices and will produce high-quality results.`;
 }
 
 // Template-based fallback for when no AI API is available
-function generateIntelligentFallback(idea: string, options: any): string {
+function generateIntelligentFallback(
+	idea: string,
+	options: any,
+	mode: string | null
+): string {
 	const parts: string[] = [];
-	const ideaLower = idea.toLowerCase();
 
-	// Determine task type
-	const taskTypes = {
-		code: [
-			"code",
-			"programming",
-			"react",
-			"vue",
-			"javascript",
-			"python",
-			"app",
-		],
-		writing: ["write", "essay", "article", "story", "content", "blog"],
-		analysis: ["analyze", "explain", "review", "understand", "breakdown"],
-		planning: ["plan", "schedule", "organize", "manage"],
-		creative: ["creative", "design", "art", "generate"],
-	};
-
-	const detectType = () => {
+	// Use provided mode, or detect from idea
+	let taskType = mode || "general";
+	if (!mode) {
+		const ideaLower = idea.toLowerCase();
+		const taskTypes: Record<string, string[]> = {
+			code: [
+				"code",
+				"programming",
+				"react",
+				"vue",
+				"javascript",
+				"python",
+				"app",
+			],
+			writing: ["write", "essay", "article", "story", "content", "blog"],
+			analysis: ["analyze", "explain", "review", "understand", "breakdown"],
+			planning: ["plan", "schedule", "organize", "manage"],
+			creative: ["creative", "design", "art", "generate"],
+		};
 		for (const [type, keywords] of Object.entries(taskTypes)) {
-			if (keywords.some((kw) => ideaLower.includes(kw))) return type;
+			if (keywords.some((kw) => ideaLower.includes(kw))) {
+				taskType = type;
+				break;
+			}
 		}
-		return "general";
-	};
-
-	const taskType = detectType();
+	}
 
 	// Role definitions
 	const roles: Record<string, string> = {
@@ -273,22 +285,36 @@ function generateIntelligentFallback(idea: string, options: any): string {
 			"You are a strategic planner and organizer with expertise in project management and systematic thinking.",
 		creative:
 			"You are a creative professional with expertise in design thinking, innovation, and artistic expression.",
+		product:
+			"You are a product expert with deep understanding of user needs, product features, and market positioning.",
+		research:
+			"You are a research specialist with expertise in analysis, data interpretation, and evidence-based insights.",
 		general:
 			"You are an expert AI assistant designed to help users achieve their goals effectively and safely.",
 	};
 
 	if (options.includeRole) {
-		parts.push(roles[taskType]);
+		parts.push(roles[taskType] || roles.general);
 	}
 
 	parts.push(`Your Task:\n${idea}`);
 
 	if (options.includeTone) {
-		const tone =
-			taskType === "code"
-				? "Use a technical but approachable tone with clear explanations and examples."
-				: "Respond in a professional, clear, and helpful manner appropriate for the context.";
-		parts.push(`Tone: ${tone}`);
+		const toneMap: Record<string, string> = {
+			code: "Use a technical but approachable tone with clear explanations and examples.",
+			writing: "Use a clear, engaging, and well-structured writing style.",
+			creative:
+				"Use an imaginative and expressive tone that encourages creativity.",
+			product:
+				"Use a clear, benefit-focused tone that highlights value and features.",
+			research: "Use an analytical, precise, and evidence-based tone.",
+		};
+		parts.push(
+			`Tone: ${
+				toneMap[taskType] ||
+				"Respond in a professional, clear, and helpful manner appropriate for the context."
+			}`
+		);
 	}
 
 	if (options.includeSafetyRules) {

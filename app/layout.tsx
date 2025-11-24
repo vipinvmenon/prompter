@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prompter - Turn any idea into a powerful AI prompt",
-  description: "Transform your ideas or rough prompts into well-crafted, professional AI prompts using AI-powered prompt engineering.",
+  title: "Prompter Pro - Turn any idea into a powerful AI prompt",
+  description: "Transform your ideas into well-crafted, professional AI prompts with multiple modes and advanced customization options.",
 };
 
 export default function RootLayout({
