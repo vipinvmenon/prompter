@@ -29,7 +29,7 @@ export default function Header({
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 text-2xl font-bold">
           PP
         </div>
-        <h1 className="text-2xl font-bold">Prompter Pro</h1>
+        <h1 className="text-2xl font-bold">Prompter</h1>
       </div>
       {showHistoryButton && (
         <button
