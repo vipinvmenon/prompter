@@ -9,7 +9,7 @@ interface ModeDetailScreenProps {
   selectedMode: Mode;
   idea: string;
   onIdeaChange: (idea: string) => void;
-  options: PromptOptions;
+  options: PromptOptions; 
   onOptionsChange: (options: PromptOptions) => void;
   isGenerating: boolean;
   onGenerate: () => void;
