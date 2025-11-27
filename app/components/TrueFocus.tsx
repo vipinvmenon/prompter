@@ -112,10 +112,9 @@ const TrueFocus = ({
           duration: animationDuration
         }}
         style={{
-          // @ts-ignore
-          '--border-color': borderColor,
-          '--glow-color': glowColor
-        }}
+          ['--border-color' as string]: borderColor,
+          ['--glow-color' as string]: glowColor
+        } as React.CSSProperties}
       >
         <span
           className="absolute w-4 h-4 border-[3px] rounded-[3px] top-[-10px] left-[-10px] border-r-0 border-b-0"

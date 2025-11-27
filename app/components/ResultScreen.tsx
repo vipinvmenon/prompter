@@ -1,17 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { HistoryItem } from '../types';
 import Header from './Header';
 import ActionButtons from './ActionButtons';
 import PromptDisplay from './PromptDisplay';
 import HistorySidebar from './HistorySidebar';
-
-const PixelBlast = dynamic(() => import('./PixelBlast'), { 
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-[var(--background)]" />
-});
+import BackgroundAnimation from './BackgroundAnimation';
 
 interface ResultScreenProps {
   generatedPrompt: string;
@@ -44,38 +38,9 @@ export default function ResultScreen({
   onHistoryClose,
   onHistorySelect,
 }: ResultScreenProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <div className="min-h-screen relative" style={{ background: 'var(--background)' }}>
-      {/* Background Pixel Animation */}
-      <div className="absolute inset-0 w-full h-full pointer-events-none">
-        {mounted && (
-          <PixelBlast
-            variant="circle"
-            pixelSize={6}
-            color="#8A2BE2"
-            patternScale={3}
-            patternDensity={1.2}
-            pixelSizeJitter={0.5}
-            enableRipples
-            rippleSpeed={0.4}
-            rippleThickness={0.12}
-            rippleIntensityScale={1.5}
-            liquid
-            liquidStrength={0.12}
-            liquidRadius={1.2}
-            liquidWobbleSpeed={5}
-            speed={0.6}
-            edgeFade={0.25}
-            transparent
-          />
-        )}
-      </div>
+      <BackgroundAnimation />
 
       {/* Content */}
       <div className="relative z-10">

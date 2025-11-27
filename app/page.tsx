@@ -129,35 +129,28 @@ export default function Home() {
     },
   };
 
+  // Shared motion div props to reduce duplication
+  const motionProps = {
+    custom: direction,
+    variants: slideVariants,
+    initial: 'initial' as const,
+    animate: 'animate' as const,
+    exit: 'exit' as const,
+    transition,
+    style: { willChange: 'transform, opacity' as const },
+  };
+
   // Render appropriate screen with Framer Motion transitions
   return (
     <div className="overflow-x-hidden">
       <AnimatePresence initial={false} custom={direction}>
         {currentScreen === 'landing' && (
-          <motion.div
-            key="landing"
-            custom={direction}
-            variants={slideVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={transition}
-            style={{ willChange: 'transform, opacity' }}
-          >
+          <motion.div key="landing" {...motionProps}>
             <LandingScreen onModeSelect={handleModeSelect} />
           </motion.div>
         )}
         {currentScreen === 'detail' && (
-          <motion.div
-            key="detail"
-            custom={direction}
-            variants={slideVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={transition}
-            style={{ willChange: 'transform, opacity' }}
-          >
+          <motion.div key="detail" {...motionProps}>
             <ModeDetailScreen
               selectedMode={selectedMode}
               idea={idea}
@@ -171,16 +164,7 @@ export default function Home() {
           </motion.div>
         )}
         {currentScreen === 'result' && (
-          <motion.div
-            key="result"
-            custom={direction}
-            variants={slideVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={transition}
-            style={{ willChange: 'transform, opacity' }}
-          >
+          <motion.div key="result" {...motionProps}>
             <ResultScreen
               generatedPrompt={generatedPrompt}
               modelUsed={modelUsed}

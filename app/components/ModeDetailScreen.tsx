@@ -1,16 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { Mode, PromptOptions } from '../types';
 import { modes } from '../constants';
 import Header from './Header';
 import AdvancedOptions from './AdvancedOptions';
-
-const PixelBlast = dynamic(() => import('./PixelBlast'), { 
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-[var(--background)]" />
-});
+import BackgroundAnimation from './BackgroundAnimation';
 
 interface ModeDetailScreenProps {
   selectedMode: Mode;
@@ -33,39 +27,11 @@ export default function ModeDetailScreen({
   onGenerate,
   onBack,
 }: ModeDetailScreenProps) {
-  const [mounted, setMounted] = useState(false);
   const currentMode = modes.find(m => m.id === selectedMode);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <div className="min-h-screen relative" style={{ background: 'var(--background)' }}>
-      {/* Background Pixel Animation */}
-      <div className="absolute inset-0 w-full h-full pointer-events-none">
-        {mounted && (
-          <PixelBlast
-            variant="circle"
-            pixelSize={6}
-            color="#8A2BE2"
-            patternScale={3}
-            patternDensity={1.2}
-            pixelSizeJitter={0.5}
-            enableRipples
-            rippleSpeed={0.4}
-            rippleThickness={0.12}
-            rippleIntensityScale={1.5}
-            liquid
-            liquidStrength={0.12}
-            liquidRadius={1.2}
-            liquidWobbleSpeed={5}
-            speed={0.6}
-            edgeFade={0.25}
-            transparent
-          />
-        )}
-      </div>
+      <BackgroundAnimation />
 
       {/* Content */}
       <div className="relative z-10">
