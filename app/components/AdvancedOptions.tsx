@@ -13,7 +13,7 @@ export default function AdvancedOptions({ options, onOptionsChange }: AdvancedOp
   };
 
   return (
-    <div className="rounded-lg border border-white/10 bg-[var(--surface)] p-4">
+    <div className="rounded-lg border border-white/20 bg-white/5 backdrop-blur-sm p-4">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Advanced Options</h3>
       <div className="space-y-3">
         <label className="flex cursor-pointer items-center gap-3">

@@ -1,33 +1,54 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Mode } from '../types';
 import { modes } from '../constants';
 import ModeCard from './ModeCard';
 import Header from './Header';
 import TrueFocus from './TrueFocus';
-import GridScan from './GridScan';
+
+const PixelBlast = dynamic(() => import('./PixelBlast'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-[var(--background)]" />
+});
 
 interface LandingScreenProps {
   onModeSelect: (mode: Mode) => void;
 }
 
 export default function LandingScreen({ onModeSelect }: LandingScreenProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className="min-h-screen relative" style={{ background: 'var(--background)' }}>
-      {/* Background Grid Animation */}
-      <div className="absolute inset-0 w-full h-full">
-        <GridScan
-          sensitivity={0.55}
-          lineThickness={1}
-          linesColor="#392e4e"
-          gridScale={0.1}
-          scanColor="#FF9FFC"
-          scanOpacity={0.4}
-          enablePost
-          bloomIntensity={0.6}
-          chromaticAberration={0.002}
-          noiseIntensity={0.01}
-        />
+      {/* Background Pixel Animation */}
+      <div className="absolute inset-0 w-full h-full pointer-events-none">
+        {mounted && (
+          <PixelBlast
+            variant="circle"
+            pixelSize={6}
+            color="#8A2BE2"
+            patternScale={3}
+            patternDensity={1.2}
+            pixelSizeJitter={0.5}
+            enableRipples
+            rippleSpeed={0.4}
+            rippleThickness={0.12}
+            rippleIntensityScale={1.5}
+            liquid
+            liquidStrength={0.12}
+            liquidRadius={1.2}
+            liquidWobbleSpeed={5}
+            speed={0.6}
+            edgeFade={0.25}
+            transparent
+          />
+        )}
       </div>
       
       {/* Content */}

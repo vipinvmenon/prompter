@@ -13,14 +13,14 @@ export default function ActionButtons({
     <div className="mb-6 flex flex-wrap gap-2 justify-end">
       <button
         onClick={onCopy}
-        className="flex items-center gap-2 rounded-lg border border-white/20 bg-[var(--surface)] px-4 py-2 text-sm transition-colors hover:bg-white/10 cursor-pointer"
+        className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 backdrop-blur-sm px-4 py-2 text-sm transition-all hover:bg-white/10 hover:shadow-[0_0_15px_rgba(138,43,226,0.3)] cursor-pointer"
       >
         {copied ? (
           <>
             <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Copied!
+            Copied !
           </>
         ) : (
           <>

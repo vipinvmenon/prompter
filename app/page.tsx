@@ -9,8 +9,8 @@ import ResultScreen from './components/ResultScreen';
 
 const transition = {
   type: 'tween' as const,
-  ease: 'easeInOut' as const,
-  duration: 0.3,
+  ease: [0.25, 0.1, 0.25, 1] as const,
+  duration: 0.2,
 };
 
 export default function Home() {
@@ -33,6 +33,7 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const navigateToScreen = (newScreen: Screen, navDirection: 'forward' | 'back' = 'forward') => {
+    // Update both states immediately for instant navigation
     setDirection(navDirection);
     setCurrentScreen(newScreen);
   };
@@ -111,26 +112,27 @@ export default function Home() {
     setHistoryOpen(false);
   };
 
-  // Animation variants for different directions
+  // Animation variants for different directions - optimized for performance
+  // Exit animation is instant to prevent lag
   const slideVariants = {
     initial: (direction: 'forward' | 'back') => ({
-      x: direction === 'forward' ? 300 : -300,
+      x: direction === 'forward' ? 200 : -200,
       opacity: 0,
     }),
     animate: {
       x: 0,
       opacity: 1,
     },
-    exit: (direction: 'forward' | 'back') => ({
-      x: direction === 'forward' ? -300 : 300,
+    exit: {
       opacity: 0,
-    }),
+      transition: { duration: 0 },
+    },
   };
 
   // Render appropriate screen with Framer Motion transitions
   return (
     <div className="overflow-x-hidden">
-      <AnimatePresence custom={direction}>
+      <AnimatePresence initial={false} custom={direction}>
         {currentScreen === 'landing' && (
           <motion.div
             key="landing"
@@ -140,6 +142,7 @@ export default function Home() {
             animate="animate"
             exit="exit"
             transition={transition}
+            style={{ willChange: 'transform, opacity' }}
           >
             <LandingScreen onModeSelect={handleModeSelect} />
           </motion.div>
@@ -153,6 +156,7 @@ export default function Home() {
             animate="animate"
             exit="exit"
             transition={transition}
+            style={{ willChange: 'transform, opacity' }}
           >
             <ModeDetailScreen
               selectedMode={selectedMode}
@@ -175,6 +179,7 @@ export default function Home() {
             animate="animate"
             exit="exit"
             transition={transition}
+            style={{ willChange: 'transform, opacity' }}
           >
             <ResultScreen
               generatedPrompt={generatedPrompt}
